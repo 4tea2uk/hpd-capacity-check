@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Human Pressure Dynamics Capacity Check</title>
+<style>
+:root{
+  --ink:#17354d;--text:#243440;--muted:#667581;--bg:#f4f7f9;--card:#fff;
+  --line:#dbe3e8;--accent:#2a8c86;--ready:#27834a;--wait:#aebbc4;--warn:#b84f43
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+button,input{font:inherit}.screen{display:none;min-height:100vh}.screen.active{display:block}
+.wrap{max-width:900px;margin:0 auto;padding:42px 22px 56px}.brand{font-weight:750;color:var(--ink)}
+h1{font-size:clamp(2rem,5vw,3.2rem);line-height:1.05;margin:.3rem 0 1rem;color:var(--ink)}
+h2{font-size:1.4rem;margin:0 0 .5rem;color:var(--ink)}.lead{font-size:1.08rem;line-height:1.55;color:var(--muted);max-width:700px}
+.card{background:var(--card);border:1px solid rgba(23,53,77,.07);border-radius:20px;padding:24px;margin:20px 0;box-shadow:0 10px 30px rgba(23,53,77,.07)}
+.btn{border:0;border-radius:12px;background:var(--ink);color:#fff;padding:13px 22px;cursor:pointer;font-weight:700;min-height:48px}
+.btn:hover{background:var(--accent)}.btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}.btn:disabled{opacity:.45}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin-top:24px}.small{font-size:.9rem;color:var(--muted)}.center{text-align:center}
+.list{line-height:1.65;padding-left:1.25rem}.test-shell{max-width:760px;margin:0 auto;padding:28px 18px 46px}
+.test-head{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:16px}
+.timer{font-variant-numeric:tabular-nums;font-size:1.1rem;font-weight:750;color:var(--ink)}
+.progress{height:8px;background:#dfe7eb;border-radius:999px;overflow:hidden}.progress>div{height:100%;width:0;background:var(--accent)}
+.stimulus{width:100%;height:min(58vh,430px);min-height:300px;margin:22px 0;border:0;border-radius:24px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;background:var(--wait);color:#fff;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;box-shadow:0 14px 34px rgba(23,53,77,.13)}
+.stimulus.ready{background:var(--ready)}.stimulus.false{background:var(--warn)}
+.stimulus .main{font-size:clamp(2rem,8vw,4rem);font-weight:850;letter-spacing:.03em}.stimulus .sub{font-size:1rem;opacity:.95}
+.metric-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:18px}
+.metric{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;text-align:left}
+.metric .label{color:var(--muted);font-size:.88rem}.metric .value{font-size:1.7rem;font-weight:780;color:var(--ink);margin-top:4px}
+.hero-result{font-size:clamp(3rem,10vw,5.5rem);font-weight:850;color:var(--ink);line-height:1}
+.note{border-left:4px solid var(--accent);padding:12px 16px;background:#edf7f5;border-radius:8px;text-align:left}
+input[type=number]{width:100%;max-width:280px;border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:#fff;color:var(--text)}
+.norm-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}.norm-field{text-align:left}.norm-field label{display:block;margin-bottom:6px}.norm-field input{max-width:none}@media(max-width:700px){.norm-grid{grid-template-columns:1fr}}
+.status-pill{display:inline-block;border-radius:999px;padding:7px 11px;background:#e8eef2;color:var(--ink);font-size:.85rem;font-weight:700;margin-top:8px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.processing-shell{max-width:760px;margin:0 auto;padding:28px 18px 46px}
+.match-key{display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin:20px 0}
+.match-key-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 18px;min-width:76px;text-align:center}
+.match-letter{font-size:1.65rem;font-weight:850;color:var(--ink)}
+.match-number{font-size:1rem;color:var(--muted);margin-top:3px}
+.match-card{background:#fff;border:1px solid var(--line);border-radius:22px;padding:38px 20px;margin:20px 0;text-align:center}
+.match-pair{font-size:clamp(3rem,12vw,6rem);font-weight:850;color:var(--ink);letter-spacing:.08em}
+.match-actions{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.match-btn{border:0;border-radius:16px;min-height:74px;font-size:1.2rem;font-weight:800;cursor:pointer}
+.match-btn.yes{background:#dff1e6;color:#205f39}.match-btn.no{background:#f6dfdc;color:#81352d}
+.match-btn:active{transform:scale(.98)}
+@media(max-width:700px){.metric-grid,.two-col{grid-template-columns:1fr}.wrap{padding-top:30px}.stimulus{min-height:340px;height:58vh}.match-key{gap:8px}.match-key-item{min-width:65px;padding:10px 12px}}
+table th,table td{border-bottom:1px solid var(--line);vertical-align:top}
+table th{font-size:.85rem;color:var(--muted)}
+.notice h2{margin-top:0}
+
+@media print {
+  @page {
+    margin: 16mm;
+  }
+
+  body {
+    background: #fff !important;
+  }
+
+  body * {
+    visibility: hidden !important;
+  }
+
+  #combinedCard,
+  #combinedCard * {
+    visibility: visible !important;
+  }
+
+  #combinedCard {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    background: #fff !important;
+  }
+
+  #combinedCard .card,
+  #combinedCard .notice {
+    break-inside: avoid;
+    box-shadow: none;
+  }
+
+  #combinedCard table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  #combinedCard th,
+  #combinedCard td {
+    border: 1px solid #bbb;
+    padding: 7px !important;
+    vertical-align: top;
+  }
+
+  #combinedCard h2 {
+    break-after: avoid;
+  }
+
+  .print-controls,
+  .print-controls * {
+    display: none !important;
+  }
+
+  button {
+    display: none !important;
+  }
+}
+
+</style>
+</head>
+<body>
+
+<section id="home" class="screen active">
+<div class="wrap">
+  <div class="brand"></div>
+  <h1>HPD Capacity Check</h1>
+  <p class="lead">Three 60-second functional checks comparing current performance with your own normal.</p>
+
+  <div class="two-col">
+    <div class="card">
+      <h2>1. Basic Reaction Check</h2>
+      <p>Green-only responses. Measures simple response speed, consistency and change across the minute.</p>
+      <div id="basicHomeStatus" class="status-pill">Not completed</div>
+      <div class="actions"><button class="btn" onclick="openIntro('basic')">Start basic check</button></div>
+    </div>
+    <div class="card">
+      <h2>2. Cognitive Reaction Check</h2>
+      <p>Green TAP and red DON’T TAP events. Adds attention, discrimination and response inhibition.</p>
+      <div id="cognitiveHomeStatus" class="status-pill">Not completed</div>
+      <div class="actions"><button class="btn" onclick="openIntro('cognitive')">Start cognitive check</button></div>
+    </div>
+    <div class="card">
+      <h2>3. Cognitive Processing Check</h2>
+      <p>Judge whether each letter–number pair matches a visible key, such as R = 3 or E = 4. Samples completed matches, response accuracy and performance maintenance across the 60-second check.</p>
+      <div id="processingHomeStatus" class="status-pill">Not completed</div>
+      <div class="actions"><button class="btn" onclick="openIntro('processing')">Start processing check</button></div>
+    </div>
+  </div>
+
+  <div id="combinedCard" class="card" style="display:none">
+    <h2>HPD Capacity Snapshot</h2>
+    <div class="notice" style="margin-top:16px;text-align:left">
+      <h2>Capacity Awareness</h2>
+      <p>These results are intended to support your awareness of current functional capacity. On their own, they do not demonstrate that capacity has declined. Performance naturally varies from day to day and may be influenced by sleep, workload, emotion, hydration, illness and normal variation.</p>
+      <p><strong>Your own experience remains the most important indicator.</strong> If you feel mentally fatigued, less focused, slower than usual or less able to sustain effort, consider taking a brief micro-recovery before continuing demanding work.</p>
+    </div>
+    <div id="combinedText" style="margin-top:16px"></div>
+    <div id="attemptSummary" class="notice" style="margin-top:16px;text-align:left"></div>
+    <div id="capacityInterpretation" class="notice" style="margin-top:16px"></div>
+    <div class="actions print-controls" style="justify-content:center;margin-top:16px">
+      <button class="btn" onclick="printCapacitySummary()">Print Results</button>
+    </div>
+    <div id="microRecoveryOptions" class="card" style="display:block;margin-top:16px;text-align:left">
+      <h2>Suggested Micro-Recovery Options</h2>
+      <p>If you feel fatigued or simply want a brief reset, choose one micro-recovery option that suits your situation:</p>
+      <ul class="list">
+        <li><strong>Physiological sigh:</strong> take two inhales through the nose, followed by one long, slow exhale through the mouth. Repeat 1–3 times.</li>
+        <li><strong>Slow breathing:</strong> breathe in gently for 4 seconds and out for 6 seconds for 1–2 minutes.</li>
+        <li><strong>Brief mindful meditation:</strong> rest your attention on your breathing for 1–2 minutes, gently returning to it whenever your mind wanders.</li>
+        <li><strong>Movement micro-recovery:</strong> stand, stretch or walk for 1–3 minutes.</li>
+        <li><strong>Visual micro-recovery:</strong> look away from the screen and into the distance for 30–60 seconds.</li>
+        <li><strong>Hydration:</strong> pause to drink some water.</li>
+      </ul>
+      <p><strong>You can repeat the Capacity Check afterwards to see whether your current functional performance has changed.</strong></p>
+    </div>
+    <p class="small" style="margin-top:16px">These checks support early awareness and micro-recovery. They do not diagnose fatigue, illness or any medical condition.</p>
+  </div>
+
+  <p class="small">Nothing is stored. The checks run locally in this browser.</p>
+</div>
+</section>
+
+<section id="intro" class="screen">
+<div class="wrap">
+  <div class="brand">HPD Capacity Check</div>
+  <h1 id="introTitle"></h1>
+  <p id="introLead" class="lead"></p>
+  <div class="card">
+    <ul id="introList" class="list"></ul>
+    <p id="introRule"></p>
+  </div>
+  <div id="singleNormBlock">
+    <label id="normLabel" for="normalInput"><strong>Your usual median time</strong> <span class="small">(optional)</span></label><br>
+    <input id="normalInput" type="number" min="100" max="2000" step="1" inputmode="numeric" placeholder="e.g. 285 ms">
+  </div>
+  <div id="processingNormBlock" style="display:none">
+    <label for="processingNormIndex"><strong>Your usual Processing Performance Index</strong> <span class="small">(optional)</span></label><br>
+    <input id="processingNormIndex" type="number" min="1" max="300" step="1" inputmode="numeric" placeholder="e.g. 100">
+    <p class="small">The index combines total matches completed, accuracy, and second-half performance relative to the first half.</p>
+  </div>
+  <div class="actions">
+    <button class="btn" onclick="beginPractice()">Try a practice</button>
+    <button class="btn secondary" onclick="show('home')">Back</button>
+  </div>
+</div>
+</section>
+
+<section id="practice" class="screen">
+<div class="test-shell center">
+  <div class="test-head"><strong id="practiceTitle">Practice</strong><span class="small">Not scored</span></div>
+  <button id="practicePanel" class="stimulus" onclick="practiceTap()">
+    <span class="main">START</span><span class="sub">Tap here to begin</span>
+  </button>
+  <p id="practiceStatus" class="small"></p>
+</div>
+</section>
+
+<section id="test" class="screen">
+<div class="test-shell center">
+  <div class="test-head"><strong id="testTitle"></strong><span id="timer" class="timer">60.0 s</span></div>
+  <div class="progress"><div id="progressBar"></div></div>
+  <button id="testPanel" class="stimulus" onclick="testTap()">
+    <span class="main">GET READY</span><span class="sub">The check will begin automatically</span>
+  </button>
+  <p id="testStatus" class="small"></p>
+</div>
+</section>
+
+<section id="results" class="screen">
+<div class="wrap center">
+  <div class="brand">HPD Capacity Check</div>
+  <h1 id="resultsTitle"></h1>
+  <p class="small">Median response speed across the 60-second check</p>
+  <div id="mainResult" class="hero-result">—</div>
+
+  <div class="metric-grid">
+    <div class="metric"><div class="label">Opening 20 seconds</div><div id="opening" class="value">—</div></div>
+    <div class="metric"><div class="label">Final 20 seconds</div><div id="closing" class="value">—</div></div>
+    <div class="metric"><div class="label">Change across the minute</div><div id="change" class="value">—</div></div>
+    <div class="metric"><div class="label">Consistency</div><div id="consistency" class="value">—</div></div>
+    <div class="metric"><div class="label">Valid green responses</div><div id="validCount" class="value">—</div></div>
+    <div class="metric"><div class="label">Responses before the signal</div><div id="falseCount" class="value">—</div></div>
+    <div id="redShownMetric" class="metric"><div class="label">Red DON’T TAP events</div><div id="redCount" class="value">—</div></div>
+    <div id="redErrorMetric" class="metric"><div class="label">Responses during DON'T TAP events</div><div id="redErrorsDisplay" class="value">—</div></div>
+    <div class="metric"><div class="label">Green signals missed</div><div id="missedCount" class="value">—</div></div>
+  </div>
+
+  <div id="runQuality" class="card"></div>
+  <div id="normalComparison" class="card" style="display:none"></div>
+  <div id="resultNote" class="note"></div>
+
+  <div class="actions" style="justify-content:center">
+    <button class="btn" onclick="restartCurrent()">Run this check again</button>
+    <button class="btn secondary" onclick="openMicroRecovery()">Take a micro-recovery</button>
+    <button id="nextTestButton" class="btn secondary" onclick="goNextTest()">Next check</button>
+    <button class="btn secondary" onclick="show('home')">Overview</button>
+  </div>
+</div>
+</section>
+
+
+
+<section id="processingPractice" class="screen">
+<div class="processing-shell center">
+  <div class="test-head"><strong>Cognitive Processing Practice</strong><span class="small">Not scored</span></div>
+  <div id="practiceMatchKey" class="match-key"></div>
+  <div class="match-card">
+    <div class="small">Does this pair match the key?</div>
+    <div id="practiceMatchPair" class="match-pair">R 3</div>
+  </div>
+  <div class="match-actions">
+    <button class="match-btn yes" onclick="processingPracticeAnswer(true,this)">MATCH</button>
+    <button class="match-btn no" onclick="processingPracticeAnswer(false,this)">NO MATCH</button>
+  </div>
+  <p id="processingPracticeStatus" class="small">Use the key above and decide whether the pair is correct.</p>
+</div>
+</section>
+
+<section id="processingTest" class="screen">
+<div class="processing-shell center">
+  <div class="test-head"><strong>Cognitive Processing Check</strong><span id="processingTimer" class="timer">60.0 s</span></div>
+  <div class="progress"><div id="processingProgress"></div></div>
+  <div id="processingMatchKey" class="match-key"></div>
+  <div class="match-card">
+    <div class="small">Does this pair match the key?</div>
+    <div id="processingMatchPair" class="match-pair">R 3</div>
+  </div>
+  <div class="match-actions">
+    <button class="match-btn yes" onclick="processingAnswer(true,this)">MATCH</button>
+    <button class="match-btn no" onclick="processingAnswer(false,this)">NO MATCH</button>
+  </div>
+  <p id="processingStatus" class="small">Respond as accurately and naturally as you can.</p>
+</div>
+</section>
+
+<section id="processingResults" class="screen">
+<div class="wrap center">
+  <div class="brand">HPD Capacity Check</div>
+  <h1>Today’s Cognitive Processing Check</h1>
+  <p class="small">Letter–number matching across the 60-second check</p>
+  <div id="processingMainResult" class="hero-result">—</div>
+
+  <div class="metric-grid">
+    <div class="metric"><div class="label">Responses Completed</div><div id="processingCompleted" class="value">—</div></div>
+    <div class="metric"><div class="label">Response Accuracy</div><div id="processingAccuracy" class="value">—</div></div>
+    <div class="metric"><div class="label">Correct Responses</div><div id="processingCorrect" class="value">—</div></div>
+    <div class="metric"><div class="label">Incorrect Responses</div><div id="processingIncorrect" class="value">—</div></div>
+    <div class="metric"><div class="label">First 30 seconds</div><div id="processingFirstHalf" class="value">—</div></div>
+    <div class="metric"><div class="label">Second 30 seconds</div><div id="processingSecondHalf" class="value">—</div></div>
+    <div class="metric"><div class="label">Performance Maintenance</div><div id="processingRelative" class="value">—</div></div>
+    <div class="metric"><div class="label">Processing Performance Index</div><div id="processingIndex" class="value">—</div></div>
+  </div>
+
+  <div id="processingQuality" class="card"></div>
+  <div id="processingNormalComparison" class="card" style="display:none"></div>
+  <div class="note"><strong>What this samples:</strong> the number of match decisions completed, decision accuracy, and how well performance is maintained from the first 30 seconds into the second 30 seconds.</div>
+
+  <div class="actions" style="justify-content:center">
+    <button class="btn" onclick="openIntro('processing')">Run this check again</button>
+    <button class="btn secondary" onclick="openMicroRecovery()">Take a micro-recovery</button>
+    <button class="btn secondary" onclick="show('home')">Overview</button>
+  </div>
+</div>
+</section>
+
+
+<section id="microRecovery" class="screen">
+<div class="wrap">
+  <div class="brand">HPD Capacity Check</div>
+  <h1>Take a micro-recovery</h1>
+  <p class="lead">Choose one brief option that suits your situation. A micro-recovery can take from around 30 seconds to a few minutes.</p>
+
+  <div class="card">
+    <h2>Physiological sigh</h2>
+    <p>Take two inhales through the nose, followed by one long, slow exhale through the mouth. Repeat 1–3 times.</p>
+  </div>
+
+  <div class="card">
+    <h2>Slow breathing</h2>
+    <p>Breathe in gently for 4 seconds and out for 6 seconds for 1–2 minutes.</p>
+  </div>
+
+  <div class="card">
+    <h2>Brief mindful meditation</h2>
+    <p>Rest your attention on your breathing for 1–2 minutes. When your mind wanders, gently bring your attention back to the breath.</p>
+  </div>
+
+  <div class="card">
+    <h2>Movement micro-recovery</h2>
+    <p>Stand, stretch or walk for 1–3 minutes.</p>
+  </div>
+
+  <div class="card">
+    <h2>Visual micro-recovery</h2>
+    <p>Look away from the screen and into the distance for 30–60 seconds.</p>
+  </div>
+
+  <div class="card">
+    <h2>Hydration</h2>
+    <p>Pause to drink some water.</p>
+  </div>
+
+  <div class="actions">
+    <button class="btn" onclick="returnFromMicroRecovery()">Return to results</button>
+    <button class="btn secondary" onclick="show('home')">Overview</button>
+  </div>
+
+  <p class="small">These options support brief preventive micro-recovery. They are not clinical treatment or medical advice.</p>
+</div>
+</section>
+
+<script>
+const TEST_MS=60000;
+const GREEN_TIMEOUT_MS=1800;
+const MIN_RED_EVENTS=4;
+const MAX_RED_EVENTS=6;
+
+let currentTest='basic';
+let practiceState='idle',practiceTimer=null,practiceStart=0;
+let running=false,state='idle',testStart=0,signalStart=0,signalTimer=null,signalEndTimer=null,ticker=null;
+let records=[],falseStarts=0,redSignals=0,redErrors=0,redTapLocked=false,eventStream=[],eventIndex=0;
+let resultsStore={basic:null,cognitive:null,processing:null};
+let attemptHistory=[];
+let microRecoveryReturnScreen='home';
+let normals={basic:null,cognitive:null,processingIndex:null};
+
+const PROCESSING_WORD='REST';
+let processingMap={},processingRunning=false,processingStart=0,processingTicker=null;
+let processingTrials=[],processingTrialStart=0,processingCurrentPair=null;
+
+function show(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0,behavior:'instant'});
+}
+function openMicroRecovery(){
+  const active=document.querySelector('.screen.active');
+  microRecoveryReturnScreen=active?active.id:'home';
+  show('microRecovery');
+}
+function returnFromMicroRecovery(){
+  show(microRecoveryReturnScreen||'home');
+}
+function printCapacitySummary(){
+  window.print();
+}
+function setPanel(panel,cls,main,sub){
+  panel.className='stimulus'+(cls?' '+cls:'');
+  panel.querySelector('.main').textContent=main;
+  panel.querySelector('.sub').textContent=sub;
+}
+function randomDelay(){
+  const r=Math.random();
+  if(r<.10)return 400+Math.random()*400;
+  if(r<.45)return 900+Math.random()*700;
+  if(r<.80)return 1700+Math.random()*1100;
+  return 2900+Math.random()*1900;
+}
+function randomRedDuration(){return 700+Math.random()*900}
+function buildEventStream(type){
+  const events=[];let planned=1600;
+  while(planned<TEST_MS-2500){
+    const gap=randomDelay();planned+=gap;
+    if(planned>=TEST_MS-1200)break;
+    events.push({gap,type:'green'});planned+=250;
+  }
+  if(type==='cognitive'){
+    const desired=Math.floor(MIN_RED_EVENTS+Math.random()*(MAX_RED_EVENTS-MIN_RED_EVENTS+1));
+    const candidates=[];for(let i=2;i<events.length-2;i++)candidates.push(i);
+    for(let n=0;n<desired&&candidates.length;n++){
+      const pick=Math.floor(Math.random()*candidates.length),idx=candidates[pick];
+      events[idx].type='red';
+      for(let j=candidates.length-1;j>=0;j--)if(Math.abs(candidates[j]-idx)<=1)candidates.splice(j,1);
+    }
+  }
+  return events;
+}
+function openIntro(type){
+  currentTest=type;
+  singleNormBlock.style.display=type==='processing'?'none':'block';
+  processingNormBlock.style.display=type==='processing'?'block':'none';
+  if(type==='processing'){
+    processingNormIndex.value=normals.processingIndex??'';
+  }else{
+    document.getElementById('normalInput').value=normals[type]??'';
+  }
+  if(type==='basic'){
+    introTitle.textContent='Basic Reaction Check';
+    introLead.textContent='For 60 seconds, respond whenever the panel changes from grey to green.';
+    introList.innerHTML='<li>Wait while the panel is grey.</li><li>Tap or click as soon as it turns green.</li><li>The intervals change unpredictably.</li><li>Continue naturally for the full minute.</li>';
+    introRule.innerHTML='<strong>Respond only when the panel is green.</strong> Responses before the signal and missed signals are recorded separately.';
+    normLabel.innerHTML='<strong>Your usual basic median reaction time</strong> <span class="small">(optional)</span>';
+    normalInput.placeholder='e.g. 270 ms';
+  }else if(type==='cognitive'){
+    introTitle.textContent='Cognitive Reaction Check';
+    introLead.textContent='For 60 seconds, respond to green TAP events and withhold responses to red DON’T TAP events.';
+    introList.innerHTML='<li>Wait while the panel is grey.</li><li>Tap or click as soon as it turns green.</li><li>Do not respond when it turns red.</li><li>The sequence and timing change unpredictably.</li><li>Continue naturally for the full minute.</li>';
+    introRule.innerHTML='<strong>Respond only to green.</strong> Responses before the signal, red-screen taps and missed green signals are recorded separately.';
+    normLabel.innerHTML='<strong>Your usual cognitive median reaction time</strong> <span class="small">(optional)</span>';
+    normalInput.placeholder='e.g. 340 ms';
+  }else{
+    introTitle.textContent='Cognitive Processing Check';
+    introLead.textContent='For 60 seconds, decide whether each letter–number pair matches a visible key.';
+    introList.innerHTML='<li>A four-letter word and its number key remain visible throughout.</li><li>A letter–number pair appears one at a time.</li><li>Select MATCH when the pair is correct.</li><li>Select NO MATCH when it is incorrect.</li><li>The number mapping is randomised for every new check.</li><li>Continue naturally for the full minute.</li>';
+    introRule.innerHTML='<strong>Prioritise accurate processing.</strong> Correct and incorrect decisions, speed, consistency and change across the minute are recorded.';
+
+  }
+  show('intro');
+}
+function beginPractice(){
+  if(currentTest==='processing'){
+    prepareProcessingPractice();
+    show('processingPractice');
+  }else{
+    show('practice');
+    preparePractice();
+  }
+}
+function preparePractice(){
+  practiceState='idle';clearTimeout(practiceTimer);
+  practiceTitle.textContent=currentTest==='basic'?'Basic Reaction Practice':'Cognitive Reaction Practice';
+  practiceStatus.textContent=currentTest==='basic'?'One green practice response before the check.':'One green practice response. Red events appear during the full check.';
+  setPanel(practicePanel,'','START','Tap here to begin the practice signal');
+}
+function practiceTap(){
+  if(practiceState==='idle'){
+    practiceState='waiting';setPanel(practicePanel,'','WAIT','Do not tap yet');practiceStatus.textContent='Wait for green.';
+    practiceTimer=setTimeout(()=>{practiceState='ready';practiceStart=performance.now();setPanel(practicePanel,'ready','TAP','Respond now')},700+Math.random()*1700);
+  }else if(practiceState==='waiting'){
+    clearTimeout(practiceTimer);practiceState='idle';setPanel(practicePanel,'false','TOO EARLY','Tap to try again');practiceStatus.textContent='Wait until green.';
+  }else if(practiceState==='ready'){
+    const rt=Math.round(performance.now()-practiceStart);practiceState='done';
+    setPanel(practicePanel,'','READY',rt+' ms practice response');
+    practiceStatus.innerHTML='Practice complete. <button class="btn" onclick="startTest()">Begin 60-second check</button>';
+  }else startTest();
+}
+function startTest(){
+  const val=parseFloat(normalInput.value);normals[currentTest]=Number.isFinite(val)?val:null;
+  records=[];falseStarts=0;redSignals=0;redErrors=0;redTapLocked=false;
+  eventStream=buildEventStream(currentTest);eventIndex=0;running=true;state='waiting';testStart=performance.now();
+  testTitle.textContent=currentTest==='basic'?'Basic Reaction Check':'Cognitive Reaction Check';
+  testStatus.textContent=currentTest==='basic'?'Respond whenever the panel turns green.':'Respond to green. Do not tap red.';
+  timer.textContent='60.0 s';progressBar.style.width='0%';
+  setPanel(testPanel,'','WAIT',currentTest==='basic'?'Respond when green':'Respond only to green');
+  show('test');scheduleSignal();ticker=setInterval(updateClock,50);updateClock();
+}
+function scheduleSignal(){
+  clearTimeout(signalTimer);clearTimeout(signalEndTimer);
+  if(!running)return;
+  state='waiting';redTapLocked=false;
+  setPanel(testPanel,'','WAIT',currentTest==='basic'?'Respond when green':'Respond only to green');
+  const elapsed=performance.now()-testStart,remaining=TEST_MS-elapsed;
+  if(remaining<=250){finishTest();return}
+  if(eventIndex>=eventStream.length){signalTimer=setTimeout(finishTest,remaining);return}
+  const event=eventStream[eventIndex++],delay=Math.min(event.gap,Math.max(100,remaining-200));
+  signalTimer=setTimeout(()=>{
+    if(!running||performance.now()-testStart>=TEST_MS){finishTest();return}
+    if(event.type==='red'){
+      state='red';redSignals++;redTapLocked=false;
+      setPanel(testPanel,'false',"DON'T TAP",'Wait for the panel to clear');
+      signalEndTimer=setTimeout(()=>{if(!running)return;state='waiting';setPanel(testPanel,'','WAIT','Respond only to green');setTimeout(scheduleSignal,120+Math.random()*260)},randomRedDuration());
+    }else{
+      state='ready';signalStart=performance.now();setPanel(testPanel,'ready','TAP','Respond now');
+      signalEndTimer=setTimeout(()=>{
+        if(!running||state!=='ready')return;
+        records.push({rt:null,elapsed:performance.now()-testStart,missed:true});
+        state='waiting';testStatus.textContent='Signal missed. Continue.';
+        setPanel(testPanel,'','MISSED','Wait for the next event');
+        setTimeout(scheduleSignal,180+Math.random()*300);
+      },GREEN_TIMEOUT_MS);
+    }
+  },delay);
+}
+function testTap(){
+  if(!running)return;
+  if(state==='waiting'){
+    falseStarts++;testStatus.textContent='Early response recorded.';
+    setPanel(testPanel,'false','EARLY','Wait for green');
+    clearTimeout(signalTimer);clearTimeout(signalEndTimer);
+    setTimeout(scheduleSignal,500+Math.random()*350);return;
+  }
+  if(state==='red'){
+    if(!redTapLocked){
+      redErrors++;redTapLocked=true;testStatus.textContent='Red-screen tap recorded.';
+      setPanel(testPanel,'false',"DON'T TAP",'Response recorded');
+    }return;
+  }
+  if(state==='ready'){
+    clearTimeout(signalEndTimer);
+    const now=performance.now(),rt=Math.round(now-signalStart);
+    records.push({rt,elapsed:now-testStart,missed:false});state='waiting';
+    testStatus.textContent=rt+' ms';setPanel(testPanel,'','RECORDED','Wait for the next event');
+    setTimeout(scheduleSignal,120+Math.random()*360);
+  }
+}
+function updateClock(){
+  const elapsed=performance.now()-testStart,remaining=Math.max(0,TEST_MS-elapsed);
+  timer.textContent=(remaining/1000).toFixed(1)+' s';
+  progressBar.style.width=Math.min(100,(elapsed/TEST_MS)*100)+'%';
+  if(remaining<=0)finishTest();
+}
+function finishTest(){
+  if(!running)return;
+  running=false;clearTimeout(signalTimer);clearTimeout(signalEndTimer);clearInterval(ticker);state='idle';
+  timer.textContent='0.0 s';progressBar.style.width='100%';
+  calculateResults();show('results');
+}
+function median(values){
+  if(!values.length)return null;
+  const a=[...values].sort((x,y)=>x-y),m=Math.floor(a.length/2);
+  return a.length%2?a[m]:Math.round((a[m-1]+a[m])/2);
+}
+function mean(v){return v.reduce((a,b)=>a+b,0)/v.length}
+function sd(v){if(v.length<2)return 0;const m=mean(v);return Math.sqrt(v.reduce((s,x)=>s+(x-m)**2,0)/v.length)}
+function calculateResults(){
+  const valid=records.filter(r=>Number.isFinite(r.rt)),missed=records.filter(r=>r.missed).length;
+  const all=valid.map(r=>r.rt),med=median(all);
+  const openMed=median(valid.filter(r=>r.elapsed<=20000).map(r=>r.rt));
+  const closeMed=median(valid.filter(r=>r.elapsed>=40000).map(r=>r.rt));
+  const delta=(openMed!==null&&closeMed!==null)?closeMed-openMed:null;
+  const variability=all.length?Math.round(sd(all)):null;
+  const result={median:med,opening:openMed,closing:closeMed,change:delta,consistency:variability,valid:valid.length,falseStarts,redSignals,redErrors,missed,normal:normals[currentTest]};
+  resultsStore[currentTest]=result;
+
+  resultsTitle.textContent=currentTest==='basic'?'Today’s Basic Reaction Check':'Today’s Cognitive Reaction Check';
+  mainResult.textContent=med===null?'—':med+' ms';
+  opening.textContent=openMed===null?'—':openMed+' ms';closing.textContent=closeMed===null?'—':closeMed+' ms';
+  change.textContent=delta===null?'—':(delta>0?'+':'')+delta+' ms';
+  consistency.textContent=variability===null?'—':variability+' ms SD';
+  validCount.textContent=valid.length;falseCount.textContent=falseStarts;missedCount.textContent=missed;
+  redCount.textContent=redSignals;redErrorsDisplay.textContent=redErrors;
+  redShownMetric.style.display=currentTest==='cognitive'?'block':'none';
+  redErrorMetric.style.display=currentTest==='cognitive'?'block':'none';
+
+  const clean=currentTest==='basic'?falseStarts===0&&missed===0:falseStarts===0&&redErrors===0&&missed===0;
+  attemptHistory.push({
+    test:currentTest,
+    clean,
+    errors:falseStarts+(currentTest==='cognitive'?redErrors:0)+missed,
+    timestamp:Date.now()
+  });
+  result.clean=clean;
+  result.errorCount=falseStarts+(currentTest==='cognitive'?redErrors:0)+missed;
+  if(clean){
+    runQuality.innerHTML='<h2>Stable assessment completed</h2><p>No response-control errors or missed green signals were recorded. Retain this result for comparison with your own normal.</p>';
+  }else{
+    const issues=[];
+    if(falseStarts)issues.push(falseStarts+' early response'+(falseStarts===1?'':'s'));
+    if(currentTest==='cognitive'&&redErrors)issues.push(redErrors+' red-screen error'+(redErrors===1?'':'s'));
+    if(missed)issues.push(missed+' missed green signal'+(missed===1?'':'s'));
+    runQuality.innerHTML='<h2>Repeat for a stable comparison</h2><p>This run included '+issues.join(', ')+'. After a brief micro-recovery, repeat until you complete one assessment without these errors.</p><p><strong>Use the first stable assessment rather than repeating to obtain a faster score.</strong></p>';
+  }
+
+  const norm=normals[currentTest];
+  if(Number.isFinite(norm)&&Number.isFinite(med)){
+    const d=med-norm,pct=Math.round((d/norm)*100);
+    normalComparison.style.display='block';
+    normalComparison.innerHTML='<h2>Compared with Your Normal</h2><p>Your median was <strong>'+Math.abs(d)+' ms '+(d>0?'slower':'faster')+'</strong> than your entered normal ('+Math.abs(pct)+'%).</p>';
+  }else normalComparison.style.display='none';
+
+  resultNote.innerHTML=currentTest==='basic'
+    ?'<strong>What this samples:</strong> current simple visual–motor response speed, consistency and possible change across the minute.'
+    :'<strong>What this samples:</strong> current response speed while maintaining attention, discrimination and response inhibition.';
+
+  nextTestButton.textContent=currentTest==='basic'?'Continue to cognitive check':'Continue to processing check';
+  updateHome();
+}
+function restartCurrent(){openIntro(currentTest)}
+function goNextTest(){
+  if(currentTest==='basic') openIntro('cognitive');
+  else if(currentTest==='cognitive') openIntro('processing');
+  else show('home');
+}
+
+
+function shuffledNumbers(){
+  const a=[1,2,3,4];
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  return a;
+}
+function createProcessingMap(){
+  const nums=shuffledNumbers(),map={};
+  [...PROCESSING_WORD].forEach((letter,i)=>map[letter]=nums[i]);
+  return map;
+}
+function renderMatchKey(container,map){
+  container.innerHTML=[...PROCESSING_WORD].map(letter =>
+    '<div class="match-key-item"><div class="match-letter">'+letter+'</div><div class="match-number">= '+map[letter]+'</div></div>'
+  ).join('');
+}
+function makeMatchPair(){
+  const letters=[...PROCESSING_WORD];
+  const letter=letters[Math.floor(Math.random()*letters.length)];
+  const isMatch=Math.random()<0.5;
+  let number=processingMap[letter];
+  if(!isMatch){
+    const wrong=[1,2,3,4].filter(n=>n!==number);
+    number=wrong[Math.floor(Math.random()*wrong.length)];
+  }
+  return {letter,number,isMatch};
+}
+function prepareProcessingPractice(){
+  processingMap=createProcessingMap();
+  renderMatchKey(practiceMatchKey,processingMap);
+  processingCurrentPair=makeMatchPair();
+  practiceMatchPair.textContent=processingCurrentPair.letter+' '+processingCurrentPair.number;
+  processingPracticeStatus.textContent='Use the key above and decide whether the pair is correct.';
+}
+function processingPracticeAnswer(answer,button){
+  if(answer===processingCurrentPair.isMatch){
+    processingPracticeStatus.innerHTML='Correct. <button class="btn" onclick="startProcessingTest()">Begin 60-second check</button>';
+  }else{
+    processingPracticeStatus.textContent='Not quite. Check the key and try again.';
+    setTimeout(()=>{
+      processingCurrentPair=makeMatchPair();
+      practiceMatchPair.textContent=processingCurrentPair.letter+' '+processingCurrentPair.number;
+    },350);
+  }
+}
+function startProcessingTest(){
+  const indexVal=parseFloat(processingNormIndex.value);
+  normals.processingIndex=Number.isFinite(indexVal)?indexVal:null;
+  processingMap=createProcessingMap();
+  processingTrials=[];processingRunning=true;processingStart=performance.now();
+  renderMatchKey(processingMatchKey,processingMap);
+  processingTimer.textContent='60.0 s';processingProgress.style.width='0%';
+  show('processingTest');nextProcessingTrial();
+  processingTicker=setInterval(updateProcessingClock,50);
+  updateProcessingClock();
+}
+function nextProcessingTrial(){
+  if(!processingRunning)return;
+  processingCurrentPair=makeMatchPair();
+  processingMatchPair.textContent=processingCurrentPair.letter+' '+processingCurrentPair.number;
+  processingTrialStart=performance.now();
+}
+function processingAnswer(answer,button){
+  if(!processingRunning)return;
+  const now=performance.now();
+  const correct=answer===processingCurrentPair.isMatch;
+  processingTrials.push({correct,rt:Math.round(now-processingTrialStart),elapsed:now-processingStart});
+  processingStatus.textContent=correct?'Correct':'Incorrect';
+  nextProcessingTrial();
+}
+function updateProcessingClock(){
+  const elapsed=performance.now()-processingStart,remaining=Math.max(0,TEST_MS-elapsed);
+  processingTimer.textContent=(remaining/1000).toFixed(1)+' s';
+  processingProgress.style.width=Math.min(100,(elapsed/TEST_MS)*100)+'%';
+  if(remaining<=0)finishProcessingTest();
+}
+function finishProcessingTest(){
+  if(!processingRunning)return;
+  processingRunning=false;clearInterval(processingTicker);
+  processingTimer.textContent='0.0 s';processingProgress.style.width='100%';
+  calculateProcessingResults();show('processingResults');
+}
+function calculateProcessingResults(){
+  const completed=processingTrials.length;
+  const correctTrials=processingTrials.filter(t=>t.correct);
+  const incorrect=completed-correctTrials.length;
+  const accuracy=completed?Math.round((correctTrials.length/completed)*100):0;
+
+  const firstHalf=processingTrials.filter(t=>t.elapsed<=30000);
+  const secondHalf=processingTrials.filter(t=>t.elapsed>30000);
+  const firstCorrect=firstHalf.filter(t=>t.correct).length;
+  const secondCorrect=secondHalf.filter(t=>t.correct).length;
+
+  // Relative maintenance: 100 means the second 30 seconds matched the first 30 seconds.
+  const relativePerformance=firstCorrect>0
+    ? Math.round((secondCorrect/firstCorrect)*100)
+    : null;
+
+  /*
+    Composite index:
+    - completed matches contributes 40%
+    - accuracy contributes 40%
+    - second-half maintenance contributes 20%
+
+    The raw completed count is used directly because this index is intended
+    to become a personal repeated-measure score. Response Accuracy and maintenance
+    prevent fast but careless responding from looking artificially strong.
+  */
+  const maintenanceForIndex=relativePerformance===null?0:Math.min(relativePerformance,150);
+  const processingIndex=Math.round(
+    (completed*0.40) +
+    (accuracy*0.40) +
+    (maintenanceForIndex*0.20)
+  );
+
+  const result={
+    completed,
+    accuracy,
+    correct:correctTrials.length,
+    incorrect,
+    firstCorrect,
+    secondCorrect,
+    relativePerformance,
+    performanceIndex:processingIndex,
+    normal:normals.processingIndex
+  };
+  resultsStore.processing=result;
+
+  processingMainResult.textContent=processingIndex;
+  processingCompleted.textContent=completed;
+  processingAccuracy.textContent=accuracy+'%';
+  processingCorrect.textContent=correctTrials.length;
+  processingIncorrect.textContent=incorrect;
+  processingFirstHalf.textContent=firstCorrect+' correct';
+  processingSecondHalf.textContent=secondCorrect+' correct';
+  processingRelative.textContent=relativePerformance===null?'—':relativePerformance+'%';
+  document.getElementById('processingIndex').textContent=processingIndex;
+
+  const clean=incorrect===0;
+  attemptHistory.push({
+    test:'processing',
+    clean,
+    errors:incorrect,
+    timestamp:Date.now()
+  });
+  result.clean=clean;
+  result.errorCount=incorrect;
+
+  if(clean){
+    processingQuality.innerHTML='<h2>Stable processing assessment</h2><p>All '+completed+' match decisions were correct. The index also reflects whether performance was maintained during the second half.</p>';
+  }else{
+    processingQuality.innerHTML='<h2>Processing performance summary</h2><p>This run included '+incorrect+' incorrect match decision'+(incorrect===1?'':'s')+'. The index reduces the benefit of completing more matches when accuracy falls.</p>';
+  }
+
+  const norm=normals.processingIndex;
+  if(Number.isFinite(norm)){
+    const d=processingIndex-norm;
+    const pct=Math.round((d/norm)*100);
+    processingNormalComparison.style.display='block';
+    processingNormalComparison.innerHTML=
+      '<h2>Compared with Your Normal</h2>'+
+      '<p>Your Processing Performance Index was <strong>'+processingIndex+'</strong>, compared with your entered normal of <strong>'+norm+'</strong>.</p>'+
+      '<p>That is <strong>'+Math.abs(d)+' points '+(d<0?'below':'above')+'</strong> normal ('+Math.abs(pct)+'%).</p>';
+  }else{
+    processingNormalComparison.style.display='none';
+  }
+
+  updateHome();
+}
+function updateHome(){
+  const b=resultsStore.basic,c=resultsStore.cognitive,p=resultsStore.processing;
+
+  basicHomeStatus.textContent=b&&Number.isFinite(b.median)
+    ? b.median+' ms median'
+    : 'Not completed';
+
+  cognitiveHomeStatus.textContent=c&&Number.isFinite(c.median)
+    ? c.median+' ms median'
+    : 'Not completed';
+
+  processingHomeStatus.textContent=p&&Number.isFinite(p.performanceIndex)
+    ? 'Index '+p.performanceIndex+' · '+p.accuracy+'% accurate'
+    : 'Not completed';
+
+  const completed=[b,c,p].filter(Boolean).length;
+  if(!completed){
+    combinedCard.style.display='none';
+    return;
+  }
+
+  combinedCard.style.display='block';
+
+  const signals=[];
+  const speedValues=[];
+  const accuracyValues=[];
+  const maintenanceValues=[];
+
+  function reactionIndicators(label,result){
+    if(!result||!Number.isFinite(result.median)) return;
+
+    const declinePct=(Number.isFinite(result.opening)&&result.opening>0&&Number.isFinite(result.closing))
+      ? ((result.closing-result.opening)/result.opening)*100
+      : null;
+
+    const normPct=(Number.isFinite(result.normal)&&result.normal>0)
+      ? ((result.median-result.normal)/result.normal)*100
+      : null;
+
+    const responseEvents=(result.falseStarts||0)+(result.redErrors||0)+(result.missed||0);
+    const totalOpportunities=(result.valid||0)+(result.missed||0)+(result.redSignals||0);
+    const accuracyPct=totalOpportunities>0
+      ? Math.max(0,Math.round(((totalOpportunities-responseEvents)/totalOpportunities)*100))
+      : null;
+
+    speedValues.push({
+      label,
+      value:result.median,
+      normPct
+    });
+
+    if(Number.isFinite(accuracyPct)) accuracyValues.push({label,value:accuracyPct});
+    if(Number.isFinite(declinePct)) maintenanceValues.push({label,value:declinePct});
+
+    if(Number.isFinite(normPct)&&normPct>=10) signals.push(label+' response speed');
+    if(Number.isFinite(accuracyPct)&&accuracyPct<95) signals.push(label+' response accuracy');
+    if(Number.isFinite(declinePct)&&declinePct>=5) signals.push(label+' performance maintenance');
+  }
+
+  reactionIndicators('Basic Reaction Check',b);
+  reactionIndicators('Cognitive Reaction Check',c);
+
+  if(p&&Number.isFinite(p.performanceIndex)){
+    accuracyValues.push({label:'Cognitive Processing Check',value:p.accuracy});
+    if(Number.isFinite(p.relativePerformance)){
+      maintenanceValues.push({
+        label:'Cognitive Processing Check',
+        value:100-p.relativePerformance
+      });
+    }
+
+    const normPct=(Number.isFinite(p.normal)&&p.normal>0)
+      ? ((p.performanceIndex-p.normal)/p.normal)*100
+      : null;
+
+    if(Number.isFinite(normPct)&&normPct<=-10) signals.push('Cognitive Processing Check response speed');
+    if(Number.isFinite(p.accuracy)&&p.accuracy<95) signals.push('Cognitive Processing Check response accuracy');
+    if(Number.isFinite(p.relativePerformance)&&p.relativePerformance<95) signals.push('Cognitive Processing Check performance maintenance');
+  }
+
+  const totalAttempts=attemptHistory.length;
+  const additionalAttempts=attemptHistory.filter(a=>!a.clean).length;
+  const stableAttempts=totalAttempts-additionalAttempts;
+  const additionalByTest={
+    basic:attemptHistory.filter(a=>a.test==='basic'&&!a.clean).length,
+    cognitive:attemptHistory.filter(a=>a.test==='cognitive'&&!a.clean).length,
+    processing:attemptHistory.filter(a=>a.test==='processing'&&!a.clean).length
+  };
+
+  const speedSummary=speedValues.length
+    ? speedValues.map(v=>{
+        const normText=Number.isFinite(v.normPct)
+          ? ' · '+Math.abs(Math.round(v.normPct))+'% '+(v.normPct>0?'slower':'faster')+' than your normal'
+          : '';
+        return v.label+': '+v.value+' ms'+normText;
+      }).join('<br>')
+    : 'Not enough information available';
+
+  const lowestAccuracy=accuracyValues.length
+    ? Math.min(...accuracyValues.map(v=>v.value))
+    : null;
+
+  const largestDecline=maintenanceValues.length
+    ? Math.max(...maintenanceValues.map(v=>v.value))
+    : null;
+
+  const accuracyStatus=Number.isFinite(lowestAccuracy)
+    ? (lowestAccuracy>=95?'Appears well maintained':lowestAccuracy>=85?'Some variation':'Noticeable variation')
+    : 'Not enough information available';
+
+  const maintenanceStatus=Number.isFinite(largestDecline)
+    ? (largestDecline<5?'Appears well maintained':largestDecline<10?'Some variation':'Noticeable variation')
+    : 'Not enough information available';
+
+  const stabilityStatus=additionalAttempts===0
+    ? 'Stable across completed assessments'
+    : additionalAttempts===1
+      ? 'One additional attempt recorded'
+      : additionalAttempts+' additional attempts recorded';
+
+  combinedText.innerHTML=
+    '<h2>Behavioural Indicators</h2>'+
+    '<div style="overflow-x:auto">'+
+    '<table style="width:100%;border-collapse:collapse;text-align:left">'+
+    '<thead><tr>'+
+    '<th style="padding:8px">Behavioural Indicator</th>'+
+    '<th style="padding:8px">What It Reflects</th>'+
+    '<th style="padding:8px">Current Observation</th>'+
+    '</tr></thead>'+
+    '<tbody>'+
+    '<tr><td><strong>Response Speed</strong></td><td>How quickly you responded when appropriate.</td><td>'+speedSummary+'</td></tr>'+
+    '<tr><td><strong>Response Accuracy</strong></td><td>How consistently you responded correctly.</td><td>'+accuracyStatus+(Number.isFinite(lowestAccuracy)?' · lowest observed accuracy '+lowestAccuracy+'%':'')+'</td></tr>'+
+    '<tr><td><strong>Performance Maintenance</strong></td><td>How well performance was sustained throughout the assessments.</td><td>'+maintenanceStatus+(Number.isFinite(largestDecline)?' · largest observed decline '+Math.round(largestDecline)+'%':'')+'</td></tr>'+
+    '<tr><td><strong>Performance Stability</strong></td><td>How consistently you were able to complete stable assessments.</td><td>'+stabilityStatus+'</td></tr>'+
+    '</tbody>'+
+    '</table></div>';
+
+  attemptSummary.innerHTML=
+    '<h2>Performance Stability Detail</h2>'+
+    '<p><strong>Total attempts:</strong> '+totalAttempts+' · <strong>Stable assessments:</strong> '+stableAttempts+' · <strong>Additional attempts:</strong> '+additionalAttempts+'</p>'+
+    '<p>Basic Reaction Check: '+additionalByTest.basic+' · Cognitive Reaction Check: '+additionalByTest.cognitive+' · Cognitive Processing Check: '+additionalByTest.processing+'</p>'+
+    '<p class="small">Requiring additional attempts does not necessarily indicate reduced functional capacity. When considered alongside the other Behavioural Indicators and, most importantly, how you currently feel, it may provide another useful observation about current functional performance.</p>';
+
+  if(additionalAttempts>=2) signals.push('Performance stability');
+
+  const indicatorGroups=new Set(
+    signals.map(s=>{
+      if(s.includes('response speed')) return 'Response Speed';
+      if(s.includes('response accuracy')) return 'Response Accuracy';
+      if(s.includes('performance maintenance')) return 'Performance Maintenance';
+      return 'Performance Stability';
+    })
+  );
+
+  const variedIndicators=indicatorGroups.size;
+
+  if(variedIndicators===0){
+    capacityInterpretation.innerHTML=
+      '<h2>Overall Interpretation</h2>'+
+      '<p><strong>Current functional capacity appears well maintained.</strong></p>'+
+      '<p>No consistent variation is evident across the completed Behavioural Indicators or the personal normals you entered.</p>';
+  }else if(variedIndicators===1){
+    capacityInterpretation.innerHTML=
+      '<h2>Overall Interpretation</h2>'+
+      '<p><strong>One Behavioural Indicator varied.</strong></p>'+
+      '<p>A single variation may reflect normal moment-to-moment fluctuation. Your current functional capacity may still be well maintained.</p>'+
+      '<p>You may choose a brief micro-recovery before continuing demanding work.</p>';
+  }else{
+    capacityInterpretation.innerHTML=
+      '<h2>Overall Interpretation</h2>'+
+      '<p><strong>Current functional capacity might be reduced.</strong></p>'+
+      '<p>Variation was present across more than one Behavioural Indicator.</p>'+
+      '<p>This does not prove that capacity has declined, but it may support your awareness of how you currently feel and perform.</p>'+
+      '<p>Consider taking a brief micro-recovery before continuing demanding work.</p>';
+  }
+
+  microRecoveryOptions.style.display='block';
+}
+</script>
+</body>
+</html>
